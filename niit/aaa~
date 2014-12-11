@@ -1,0 +1,12 @@
+input()
+{
+ echo -n "$1"
+ read a
+ while test "$a" = ""
+ do
+     	 echo -n "$1"
+         read a
+ done
+ echo "$a"
+}
+a="`input "Hoc Chan:"`"

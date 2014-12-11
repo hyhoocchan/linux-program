@@ -1,0 +1,370 @@
+
+payslip()
+{
+         clear
+         echo " --------------------- Deezy Corp. Pay-Slip------------------------"
+         tput cup 2 1 ;echo "---------------------------------------------------------------"
+         tput cup 3 1 ;echo "Employee ID:  $e_id"
+         tput cup 3 40;echo "Name:         $f_name $l_name"
+         tput cup 4 1 ;echo "Department:   $department"    
+         tput cup 4 40;echo "Grade:        $e_grade"    
+         tput cup 5 1 ;echo "Basic Salary: $e_salary"
+	 tput cup 5 40;echo "Gross Salary: $e_gsalary"
+	 tput cup 6 1 ;echo "---------------------------------------------------------------"
+         tput cup 7 1;echo "`date '+Date:%d-%m-%y'`"
+         tput cup 7 50;echo "Manager"
+         tput cup 8 43;echo "Accounts Department"
+}
+
+checkDate()
+{
+        
+        month=(31 28 31 30 31 30 31 31 30 31 30 31)
+        a=`expr $3 / 4`
+        b=`expr $a \* 4`
+        if test "$b" -eq "$3"
+        then
+                month[1]=29
+        fi
+        if test $1 -lt 1 -o $1 -gt ${month[`expr $2 - 1`]}
+        then
+                echo "False"
+        else
+                echo "True"
+        fi
+}
+
+checkLimitNum()
+{
+	if test $1 -ge $2 -a $1 -le $3
+	then
+		echo "True"
+	else
+		echo "False"
+	fi
+}
+
+showSkill()
+{
+	i=1
+	for record in `cat Grades | cut -d ":" -f4`
+	do
+		echo "${i}.$record"
+		i=`expr $i + 1`
+	done
+	echo -n "Choose skill: "
+}
+
+showDepartment()
+{
+	i=1
+	for record in `cat Departments`
+	do
+		echo "${i}.$record"
+		i=`expr $i + 1`
+	done 
+	echo -n "Choose department: "
+}
+
+setEmployee()
+{
+          echo -n "First Name: ";      read f_name
+          echo -n "Last Name: ";      read l_name
+
+ # ------ Set Birday --------------------
+	  while true
+		do
+                 echo -n "Date of Birth: ";   read e_date
+		 while true
+		 do 
+			echo -n "Month of Birth: ";  read e_month     
+			if test $e_month -ge 1 -a $e_month -le 12
+			then
+				break
+			fi	
+		 done
+
+		 while true
+		 do
+ 	             current="`date | tr -s " " | cut -d " " -f6`"
+
+		     echo -n "Year of Birth (1945 -> `expr $current - 18`): ";  read e_year 	
+		     if test $e_year -ge 1945 -a $e_year -le `expr $current - 18`
+		     then
+			break
+                     fi	
+		 done
+		
+		 if test "`checkDate $e_date $e_month $e_year`" = "True"
+		 then
+			break
+		 fi		
+                 echo "Date error. Please, enter again" 
+	  done	
+	  
+          b_date="${e_date}/${e_month}/${e_year}"
+ #--------------------------End Set Day ---------------------
+ #---------------------- Set Date of Joining --------------------
+		while true
+                do
+                 echo -n "Date of Joining: ";   read e_date
+                 while true
+                 do
+                        echo -n "Month of Joning: ";  read e_month
+                        if test $e_month -ge 1 -a $e_month -le 12
+                        then
+                                break
+                        fi
+                 done
+
+                 while true
+                 do
+		     current="`date | tr -s " " | cut -d " " -f6`"
+                     echo -n "Year of Joning (1990 -> $current): ";  read e_year
+                     if test $e_year -ge 1990 -a $e_year -le `expr $current`
+                     then
+		 	break
+                     fi
+                 done
+
+                 if test "`checkDate $e_date $e_month $e_year`" = "True"
+                 then
+                        break
+                 fi
+                 echo "Date error. Please, enter again"
+          done
+
+          j_date="${e_date}/${e_month}/${e_year}"
+ 
+
+ #-------------------------- End Set Date Of joining---------------------- 
+		while true
+		do
+                	showSkill
+	                read skill
+                        length="`showSkill | wc -l`"  
+			if [ "`checkLimitNum $skill 1 $length`" = "True"  ]
+			then
+				break
+			fi
+			echo "---Please reenter number---"		
+		done
+
+                e_grade="`cat Grades | cut -d ":" -f1 | head -$skill | tail -1`"
+		
+		while true
+		do
+                	showDepartment
+                	read depart
+			length="`showDepartment | wc -l`"  
+			if [ "`checkLimitNum $depart 1 $length`" = "True" ]
+			then					
+				break
+			fi	
+			echo "---Please reenter number--- "					
+		done 
+
+                department="`cat Departments | head -$depart | tail -1`"
+
+		while true
+		do
+	                echo -n "Basic Salary: ";
+  			read e_salary
+			if test $e_salary -gt 0
+			then
+				break
+			fi
+			echo "Negative Number. Please reenter number"
+		done
+
+                allowance="`cat Grades | grep "^$e_grade" | cut -d ":" -f3 | tr "%" " "`"
+                deduction="`cat Grades | grep "^$e_grade" | cut -d ":" -f2 | tr "%" " "`"
+
+                e_gsalary=$(( $e_salary + $e_salary * $allowance / 100 - $e_salary * $deduction / 100 ))
+                echo -n "Do you want to save it? (y/n)"; read ans
+                if [ "$ans" = "y" ]
+                then
+                   echo "$1:$f_name:$l_name:$b_date:$j_date:$department:$e_grade:$e_salary:$e_gsalary" >> Employee_Master
+                Temp="`sort Employee_Master`"
+		echo "$Temp" > Employee_Master
+                fi
+}
+
+addEmployee()
+{
+	while true
+	do
+	clear
+        echo "-----ADD EMPLOYEE-----"
+
+
+	#----------Create e_id automatic-----
+        if test -e Employee_Master
+        then
+                e_id=`cat Employee_Master | cut -d ":" -f1 | sort -n | tail -1`
+                e_id=`expr $e_id + 1`
+	        if test $e_id -lt 10
+		then e_id="00${e_id}"
+		elif test $e_id -lt 100
+		then e_id="0${e_id}"
+		fi			
+        else
+                e_id="001"
+        fi
+	#-----------------------------------------
+	
+	setEmployee $e_id
+
+	#-----------------------------
+	echo -n "Continue to add ? (y/n) "
+	read ans
+	if [ "$ans" = "y" ]
+	then	continue
+	else	break    
+	fi	
+	done
+}
+
+#-----------------------Edit Employee----------------------
+deleteE()
+{	
+	Temp="`sed "/^$1/d" Employee_Master`"
+	echo "$Temp" > Employee_Master			
+}	
+
+
+listfind()
+{
+ length="`echo "$1" | wc -l`"
+ i=1 
+ while true
+ do
+    tmp="`echo "$1" | head -$i | tail -1`"	    
+    e_id="`echo "$tmp" | cut -d ":" -f1`"
+    f_name="`echo "$tmp" | cut -d ":" -f2`"
+    l_name="`echo "$tmp" | cut -d ":" -f3`"
+    b_date="`echo "$tmp" | cut -d ":" -f4`"
+    j_date="`echo "$tmp" | cut -d ":" -f5`"
+    department="`echo "$tmp" | cut -d ":" -f6`"
+    e_grade="`echo "$tmp" | cut -d ":" -f7`"
+    e_salary="`echo "$tmp" | cut -d ":" -f8`"
+    e_gsalary="`echo "$tmp" | cut -d ":" -f9`"
+
+    clear
+    tput cup 0 0	
+    echo "---------Total: $length-----------"
+    echo "Order: $i ---->"    
+    echo "Employee ID:  $e_id"
+    echo "Name:         $f_name $l_name"
+    echo "Birth Day:    $b_date"
+    echo "Join Day:     $j_date"
+    echo "Department:   $department"
+    echo "Grade:        $e_grade"
+    echo "Basic Salary: $e_salary" 
+    echo "Gross Salary: $e_gsalary"	
+    tput cup 25 0
+    echo "*******************************************************"
+    echo "Edit (e)  Back (b)  Next (n)  Delete (d)  Exit (x)  Pay-Slips (p) "
+    read ans
+    case $ans in
+    "x")break;;
+    "d")
+	clear
+        deleteE $e_id
+	break;;		  
+    "e") 
+	 echo "********* Enter the information *************"
+	 clear
+         deleteE $e_id
+         setEmployee $e_id
+         break;;
+    "p") echo "`payslip`" | tee Print 
+         tput cup 24 0
+         echo "*******************************************************"
+         echo -n "Do you want to print it(y/n)? ";read ans
+         if test "$ans" = "y"
+	 then  
+		echo "Print sucessful" 
+		read stop
+	 fi
+	  	
+         ;;  
+    "b") i=$(($i - 1))
+         if test $i -eq 0
+         then i=$length 
+         fi
+         ;; 
+    "n") i=$(($i + 1))
+         if test $i -gt $length
+         then i=1
+         fi
+         ;;
+    esac
+ done 
+}
+
+editEmployee()
+{
+clear
+echo "-----EDIT EMPLOYEE-----"
+	
+echo "1.Find by ID "
+echo "2.Find by Name"
+echo "3.Find by order infomation"
+echo -n "Choose: ";read task
+
+info=""
+case $task in
+1) echo -n "Enter ID: ";read e_id
+   info="`cat Employee_Master | grep "^$e_id"`"     
+   ;;
+2) echo -n "Enter Name: ";read e_name 
+   info="`cat Employee_Master | grep "$e_name"`"
+   ;;
+3) echo -n "Enter the text: ";read e_info 
+   info="`cat Employee_Master | grep "$e_info"`"
+   ;;
+
+esac
+
+if test "$info" 
+then 
+    
+    listfind "`echo "$info"`"
+
+else 
+    echo "Don't have result"
+    read stop	 
+fi
+}
+
+
+
+#------------------MENU MENU MENU---------------------------------------------------------------
+while true
+do
+
+clear
+cat << menu
+------PAYROLL SYSTEM-------
+Processing Employee
+
+1.Add a new Record into Employee_Master file
+2.Edit employee informations
+3.Report
+*.Exit program
+------------------------
+menu
+echo -n "Please choose a task: "
+read task
+
+#Process -------------------
+case $task in
+1) addEmployee;;
+2) editEmployee;;
+3) sh report	
+   ;;
+*) break ;;
+esac
+done
+

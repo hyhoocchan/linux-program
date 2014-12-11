@@ -1,0 +1,23 @@
+while true
+do
+clear
+cat << menu
+------PAYROLL SYSTEM-------
+-----------o0o-------------
+
+1.Processing EMPLOYEES
+2.About Grades files
+*.Exit program
+-------------------
+menu
+echo -n "Please choose a task: "
+read task
+
+#Process -------------------
+case $task in
+1) sh employee;;
+2) sh grade;;
+*) echo "Thank for using my program.Have a nice day (^:^)"
+   break ;;
+esac
+done

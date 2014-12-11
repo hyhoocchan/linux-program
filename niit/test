@@ -1,0 +1,5 @@
+for a in `cat Grades | cut -d ":" -f1`
+do
+	echo "$a:0:1" >> test2
+done
+

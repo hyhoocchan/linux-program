@@ -1,0 +1,260 @@
+doyouprint()
+{
+	 tput cup 24 0
+         echo "*******************************************************"
+         echo -n "Do you want to print it(y/n)? ";read ans
+         if test "$ans" = "y"
+	 then  		
+		echo "Print sucessful" 		
+		read stop
+	 fi
+}
+
+task1()
+{
+   clear
+   echo "                 ********** Employee Informations ************"
+   showinfo "`cat Employee_Master`" "2"   
+   doyouprint 
+}
+
+task2()
+{
+   clear
+   echo "          The records of employees who have joined the company in the current year"
+
+   d="`date | tr -s " " | cut -d " " -f6`"
+   info="`cat Employee_Master | grep "$d"`"
+   showinfo "`echo "$info"`" "2"
+  
+   doyouprint
+}
+
+task3()
+{
+   clear
+   echo "      The records of employees who have their date of retirement in the current year"
+
+   d="`date | tr -s " " | cut -d " " -f6`"
+   echo "" > Temp
+   for record in `cat Employee_Master`
+   do
+       yob="`echo "$record" | cut -d ":" -f4 | cut -d "/" -f3`"
+       re=`expr $d - $yob`
+       if test $re -gt 55
+       then
+            echo "$record" >> Temp
+       fi
+   done
+   showinfo "`cat Temp`" "2"
+   rm -f Temp
+
+   doyouprint
+}
+
+task4()
+{ 
+   clear
+   echo "          Department-wise total number of employees"
+   showDepartment
+   read depart
+   de="`cat Departments | head -$depart | tail -1`"
+   
+   info="`cat Employee_Master | grep "$de"`"
+
+   clear
+   echo "          Department-wise total number of employees"
+   showinfo "`echo "$info"`" "3"
+   total="`cat Employee_Master | grep "$de" | wc -l`"
+   echo " Total number of employees: $total"
+   
+   doyouprint
+}
+
+task5()
+{
+# Create GradeTmp file ------------------
+ for a in `cat Grades | cut -d ":" -f1` 
+ do
+	echo "$a:0:0" >> GradeTmp
+ done
+#-------------------------------------
+# Process ---- then ---- input data to GradeTmp file ----
+
+for record in `cat Employee_Master`
+ do
+   e_grade="`echo "$record" | cut -d ":" -f7`"
+   e_salary="`echo "$record" | cut -d ":" -f8`"   
+   deduction="`cat Grades | grep "^$e_grade" | cut -d ":" -f2 | tr "%" " "`"    
+   allowance="`cat Grades | grep "^$e_grade" | cut -d ":" -f3 | tr "%" " "`"
+
+   ded=$(($e_salary * $deduction / 100))
+   all=$(($e_salary * $allowance / 100))
+
+   info="`cat GradeTmp | grep "^$e_grade"`"
+    
+   detmp="`echo "$info" | cut -d ":" -f2`" 
+   altmp="`echo "$info" | cut -d ":" -f3`"
+   
+   totald=`expr $ded + $detmp`	
+   totala=`expr $all + $altmp`	
+    
+   sed "s/^$info/$e_grade:$totald:$totala/" GradeTmp > Temp
+   cat Temp > GradeTmp
+ done
+ 
+#-----------------------------------------------------
+# ---------- Show info of GradeTmp file --------------
+ clear
+ echo "   ------Report of Deduction and Allowance for all grades-----"
+ i=2
+ tput cup $i 5
+ echo " _____________________________________________________" 
+ i=`expr $i + 1`
+ tput cup $i 5 
+ echo "| Grade_ID | Deduction | Allowance |   Description    |"
+ i=`expr $i + 1`
+ tput cup $i 5
+ echo "|_____________________________________________________|"
+ i=`expr $i + 1`
+ 
+ for record in `cat GradeTmp`
+ do
+    e_grade="`echo "$record" | cut -d ":" -f1`"    
+    ded="`echo "$record" | cut -d ":" -f2`"    
+    all="`echo "$record" | cut -d ":" -f3`"        
+    e_dis="`cat Grades | grep "^$e_grade" | cut -d ":" -f4`" 	
+   
+    tput cup $i 5 ;echo "| $e_grade"
+    tput cup $i 16;echo "| $ded"
+    tput cup $i 28;echo "| $all"
+    tput cup $i 40;echo "| $e_dis"
+    tput cup $i 59;echo "|"
+    i=`expr $i + 1`	
+ done
+ tput cup $i 5; echo "|_____________________________________________________|"
+
+ doyouprint
+# Remove GradeTmp file ----------
+ rm -f GradeTmp
+}
+
+task6()
+{
+ clear
+ cmonth=`date '+%m'`
+ echo "" >Temp	
+
+ for record in `cat Employee_Master`
+ do
+       mob="`echo "$record" | cut -d ":" -f4 | cut -d "/" -f2`"		
+       dob="`echo "$record" | cut -d ":" -f4 | cut -d "/" -f1`"		
+       if test $mob -eq $cmonth -a $dob -eq 1
+       then
+	   echo "$record" >> Temp				
+       fi	
+ done
+ echo "The records of employees who have their birthday on every first day   in the current month"
+ 
+ showinfo "`cat Temp`" "2"
+ rm -f Temp
+
+ doyouprint
+ 
+}
+
+showinfo()
+{
+ i=$2
+ tmp=$1	
+ 
+ tput cup $i 0
+ echo " ______________________________________________________________________________________________" 
+ i=`expr $i + 1`
+ tput cup $i 0 
+ echo "| E_ID | F_Name | L_Name |   B_Date   |   J_Date   | Department  | Grade | B_Salary | G_Salary |"
+ i=`expr $i + 1`
+ tput cup $i 0
+ echo "|______________________________________________________________________________________________|"
+ i=`expr $i + 1`
+ for record in `echo "$tmp"`
+ do 
+     	
+     e_id="`echo "$record" | cut -d ":" -f1`"
+     f_name="`echo "$record" | cut -d ":" -f2`"
+     l_name="`echo "$record" | cut -d ":" -f3`"
+     b_date="`echo "$record" | cut -d ":" -f4`"
+     j_date="`echo "$record" | cut -d ":" -f5`"
+     department="`echo "$record" | cut -d ":" -f6`"
+     e_grade="`echo "$record" | cut -d ":" -f7`"
+     e_salary="`echo "$record" | cut -d ":" -f8`"
+     e_gsalary="`echo "$record" | cut -d ":" -f9`"
+
+     tput cup $i 0;  echo "| $e_id"
+     tput cup $i 7;  echo "| $f_name" 
+     tput cup $i 16; echo "| $l_name"
+     tput cup $i 25; echo "| $b_date"
+     tput cup $i 38; echo "| $j_date"
+     tput cup $i 51; echo "| $department"
+     tput cup $i 65; echo "| $e_grade"
+     tput cup $i 73; echo "| $e_salary"
+     tput cup $i 84; echo "| $e_gsalary"
+     tput cup $i 95; echo "|"
+     i=`expr $i + 1`
+ done
+tput cup $i 0 
+echo "|______________________________________________________________________________________________|"
+}
+
+showDepartment()
+{
+	i=1
+	for record in `cat Departments`
+	do
+		echo "${i}.$record"
+		i=`expr $i + 1`
+	done 
+	echo -n "Choose department: "
+}
+
+
+while true
+do
+
+clear
+cat << menu
+------PAYROLL SYSTEM-------
+--------- REPORT ----------
+
+1.View all employees
+2.The records of employees who have joined the company in the current year
+3.The records of employees who have their date of retirement in the current year
+4.Department-wise total number of employees
+5.Report of Deduction and Allowance for all grades
+6.The records of employees who have their birthday on every first day in the current month
+*.Exit 
+------------------------
+menu
+echo -n "Please choose a task: "
+read task
+
+
+case $task in
+1) task1
+   ;;
+2) task2
+   ;;
+3) task3   
+   ;;
+4) task4   
+   ;;
+5) task5  	
+   ;;
+6) task6
+   ;;
+*) break
+   ;;
+esac
+
+done
+

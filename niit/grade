@@ -1,0 +1,52 @@
+while true
+do
+
+clear
+cat << menu
+------PAYROLL SYSTEM-------
+Process Grades file
+
+1.Cat Grades file
+2.Create or edit Grades file
+3.Delete Grades file
+*.Exit this task.
+-----------------
+menu
+echo -n "Please choose a task: "
+read task2
+
+#Process -------------------
+case $task2 in
+1) if test -e Grades
+   then 
+	clear
+        echo "Grades files"
+	echo "-----------------------"
+	echo "Grade:Deduction:Allowance:Description"	
+	cat Grades
+   else echo "Grades file not exists"
+   fi	
+
+   read stop	
+;;
+2) vi Grades ;;
+3) if test -e Grades 
+   then
+	echo -n "Are you sure ? (y/n) "
+	read as
+	if test "$as" = "y"
+	then
+ 	     rm -f Grades
+	     echo "Grades was deleted $as"	
+	else
+	     echo "Any key to continue"	
+	fi
+   else
+        echo "Grades not exists"
+   fi   		
+   read stop
+;;
+*) break ;;
+esac
+done
+
